@@ -173,21 +173,28 @@ class SpaceshipPredictor:
         
         # 6. Service combination features
         if 'CryoSleep' in df_combined.columns:
-            df_combined['CryoSleep'] = df_combined['CryoSleep'].astype(int)
+            df_combined['CryoSleep'] = df_combined['CryoSleep'].fillna(False).astype(int)
             
         if 'VIP' in df_combined.columns:
-            df_combined['VIP'] = df_combined['VIP'].astype(int)
+            df_combined['VIP'] = df_combined['VIP'].fillna(False).astype(int)
         
         # Handle remaining missing values
         numeric_cols = df_combined.select_dtypes(include=[np.number]).columns
         for col in numeric_cols:
             df_combined[col].fillna(df_combined[col].median(), inplace=True)
         
-        categorical_cols = df_combined.select_dtypes(include=['object']).columns
+        categorical_cols = df_combined.select_dtypes(include=['object', 'category']).columns
         for col in categorical_cols:
             if col not in ['PassengerId', 'Name', 'Cabin']:
                 le = LabelEncoder()
                 df_combined[col] = le.fit_transform(df_combined[col].astype(str))
+        
+        # Also encode any remaining categorical features
+        for col in df_combined.columns:
+            if df_combined[col].dtype == 'object' or df_combined[col].dtype.name == 'category':
+                if col not in ['PassengerId', 'Name', 'Cabin']:
+                    le = LabelEncoder()
+                    df_combined[col] = le.fit_transform(df_combined[col].astype(str))
         
         # Select features for modeling
         feature_cols = [col for col in df_combined.columns if col not in [
